@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Web Crawler{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="bi bi-graph-up"></i> Reports & Analytics</h1>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h2 class="text-primary">{{ stats.total_sources }}</h2>
+                <p>Total Sources</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h2 class="text-success">{{ stats.total_data_items }}</h2>
+                <p>Data Items Collected</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h2 class="text-info">{{ logs|length }}</h2>
+                <p>Crawl Operations</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Crawl Status Distribution</h5>
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Items Collected Over Time</h5>
+                <canvas id="timelineChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Logs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Recent Crawl Logs</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>URL</th>
+                                <th>Status</th>
+                                <th>Items</th>
+                                <th>Errors</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs[:20] %}
+                            <tr>
+                                <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else 'N/A' }}</td>
+                                <td><small>{{ log.url[:40] }}...</small></td>
+                                <td>
+                                    {% if log.status == 'success' %}
+                                        <span class="badge bg-success">Success</span>
+                                    {% elif log.status == 'error' %}
+                                        <span class="badge bg-danger">Error</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ log.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ log.items_collected }}</td>
+                                <td><small>{{ log.errors|join(', ') if log.errors else '-' }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Status Chart
+const statusData = {{ logs | selectattr('status') | map(attribute='status') | list | tojson }};
+const statusCounts = {};
+statusData.forEach(status => {
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+});
+
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(statusCounts),
+        datasets: [{
+            data: Object.values(statusCounts),
+            backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#3b82f6']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Timeline Chart
+const timelineData = {{ logs | selectattr('timestamp') | list | tojson }};
+const dates = {};
+timelineData.forEach(log => {
+    const date = new Date(log.timestamp).toLocaleDateString();
+    dates[date] = (dates[date] || 0) + (log.items_collected || 0);
+});
+
+new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: {
+        labels: Object.keys(dates),
+        datasets: [{
+            label: 'Items Collected',
+            data: Object.values(dates),
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

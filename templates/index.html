@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Web Crawler{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <svg class="icon-lg" fill="currentColor" viewBox="0 0 20 20" style="vertical-align: middle;">
+                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+            </svg>
+            Dashboard Overview
+        </h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <svg class="stat-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"/>
+            </svg>
+            <h3>{{ stats.total_sources }}</h3>
+            <p>Total Sources</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <svg class="stat-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <h3>{{ stats.active_sources }}</h3>
+            <p>Active Sources</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card info">
+            <svg class="stat-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/>
+                <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/>
+                <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/>
+            </svg>
+            <h3>{{ stats.total_data_items }}</h3>
+            <p>Data Items</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <svg class="stat-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+            </svg>
+            {% set success_count = recent_logs | selectattr('status', 'equalto', 'success') | list | length %}
+            {% set success_rate = (success_count / recent_logs|length * 100) if recent_logs|length > 0 else 0 %}
+            <h3>{{ "%.1f"|format(success_rate) }}%</h3>
+            <p>Success Rate</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                </svg>
+                Recent Crawl Activity
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>URL</th>
+                                <th>Status</th>
+                                <th>Items</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_logs %}
+                            <tr>
+                                <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else 'N/A' }}</td>
+                                <td><small>{{ log.url[:50] }}...</small></td>
+                                <td>
+                                    {% if log.status == 'success' %}
+                                        <span class="badge badge-success">Success</span>
+                                    {% elif log.status == 'error' %}
+                                        <span class="badge badge-danger">Error</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">{{ log.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ log.items_collected }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No activity yet. Start crawling!</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <svg class="icon-lg" fill="currentColor" viewBox="0 0 20 20" style="color: var(--primary-color);">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
+                </svg>
+                <h5 class="card-title mt-3">Add Sources</h5>
+                <p class="card-text text-muted">Configure new crawl sources</p>
+                <a href="/sources" class="btn btn-primary">Go to Sources</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <svg class="icon-lg" fill="currentColor" viewBox="0 0 20 20" style="color: var(--info-color);">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                </svg>
+                <h5 class="card-title mt-3">Search Data</h5>
+                <p class="card-text text-muted">Find crawled content</p>
+                <a href="/search" class="btn btn-primary">Search Now</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <svg class="icon-lg" fill="currentColor" viewBox="0 0 20 20" style="color: var(--success-color);">
+                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                </svg>
+                <h5 class="card-title mt-3">View Reports</h5>
+                <p class="card-text text-muted">Analytics and insights</p>
+                <a href="/reports" class="btn btn-primary">View Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

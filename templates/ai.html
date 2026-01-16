@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant - Web Crawler{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <svg class="icon-lg" fill="currentColor" viewBox="0 0 20 20" style="vertical-align: middle;">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+            </svg>
+            AI Assistant
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Chat Section -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"/>
+                </svg>
+                Chat with AI
+            </div>
+            <div class="card-body">
+                <div id="chatMessages" style="height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: var(--light-bg);">
+                    <div class="text-muted text-center">
+                        <p>Ask me anything about your crawled data!</p>
+                        <small>Examples: "What data do we have?", "Tell me about recent items", "Summarize the content"</small>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" class="form-control" id="chatInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter') sendChat()">
+                    <button class="btn btn-primary" onclick="sendChat()">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                        </svg>
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Analysis Section -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                </svg>
+                Data Analysis
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Search Query (optional)</label>
+                    <input type="text" class="form-control" id="analyzeQuery" placeholder="Enter keyword to analyze specific data...">
+                </div>
+                
+                <button class="btn btn-primary w-100 mb-3" onclick="analyzeData()">
+                    <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                    </svg>
+                    Analyze Data
+                </button>
+                
+                <div class="loading" id="analyzeLoading">
+                    <div class="spinner"></div>
+                    <p class="mt-3">Analyzing...</p>
+                </div>
+                
+                <div id="analysisResult" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6>Analysis Results</h6>
+                        <pre id="analysisText" style="white-space: pre-wrap; font-size: 0.9rem;"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summarization Section -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                </svg>
+                Quick Summarize
+            </div>
+            <div class="card-body">
+                <p class="text-muted"><small>Summarize recent data automatically</small></p>
+                <button class="btn btn-outline-primary w-100" onclick="quickSummarize()">
+                    <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    Summarize Recent Data
+                </button>
+                
+                <div id="summaryResult" class="mt-3" style="display: none;">
+                    <div class="alert alert-success">
+                        <h6>Summary</h6>
+                        <p id="summaryText"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to chat
+    addMessage('user', message);
+    input.value = '';
+    
+    // Show loading
+    addMessage('assistant', 'Thinking...', 'loading');
+    
+    try {
+        const response = await fetch('/api/ai/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: message})
+        });
+        
+        const result = await response.json();
+        
+        // Remove loading message
+        const loadingMsg = document.querySelector('.message.loading');
+        if (loadingMsg) loadingMsg.remove();
+        
+        if (result.success) {
+            addMessage('assistant', result.response);
+        } else {
+            addMessage('assistant', 'Error: ' + result.error);
+        }
+    } catch (error) {
+        const loadingMsg = document.querySelector('.message.loading');
+        if (loadingMsg) loadingMsg.remove();
+        addMessage('assistant', 'Error: ' + error.message);
+    }
+}
+
+function addMessage(role, text, className = '') {
+    const container = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${className}`;
+    messageDiv.style.cssText = `
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        ${role === 'user' ? 'background: var(--primary-color); color: white; margin-left: 20%;' : 'background: white; margin-right: 20%;'}
+    `;
+    messageDiv.innerHTML = `<strong>${role === 'user' ? 'You' : 'AI'}:</strong> ${text}`;
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+async function analyzeData() {
+    const query = document.getElementById('analyzeQuery').value;
+    
+    document.getElementById('analyzeLoading').classList.add('active');
+    document.getElementById('analysisResult').style.display = 'none';
+    
+    try {
+        const response = await fetch('/api/ai/analyze', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: query})
+        });
+        
+        const result = await response.json();
+        document.getElementById('analyzeLoading').classList.remove('active');
+        
+        if (result.success) {
+            document.getElementById('analysisText').textContent = result.analysis;
+            document.getElementById('analysisResult').style.display = 'block';
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        document.getElementById('analyzeLoading').classList.remove('active');
+        alert('Error: ' + error.message);
+    }
+}
+
+async function quickSummarize() {
+    // Get recent items
+    try {
+        const searchResponse = await fetch('/api/search', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({type: 'recent', limit: 10})
+        });
+        
+        const searchResult = await searchResponse.json();
+        
+        if (!searchResult.success || searchResult.results.length === 0) {
+            alert('No data to summarize');
+            return;
+        }
+        
+        // Get item IDs
+        const itemIds = searchResult.results.map(item => item._id);
+        
+        // Summarize
+        const response = await fetch('/api/ai/summarize', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({item_ids: itemIds})
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('summaryText').textContent = result.summary;
+            document.getElementById('summaryResult').style.display = 'block';
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+</script>
+{% endblock %}
